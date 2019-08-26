@@ -13,9 +13,11 @@ import {
   Platform,
   ActivityIndicator,
   PixelRatio,
-  Keyboard
+  Keyboard,
+  TouchableOpacity
 } from 'react-native';
 import Qs from 'qs';
+import { SearchBar } from 'react-native-elements';
 import debounce from 'lodash.debounce';
 
 const WINDOW = Dimensions.get('window');
@@ -72,6 +74,12 @@ const defaultStyles = {
   androidLoader: {
     marginRight: -15,
   },
+  inputStyle: {
+	color: '#F5F5F5',
+	fontSize: 13,
+	lineHeight: 18,
+	letterSpacing: 0.1,
+  }
 };
 
 export default class GooglePlacesAutocomplete extends Component {
@@ -678,18 +686,22 @@ export default class GooglePlacesAutocomplete extends Component {
 
     if ((this.state.text !== '' || this.props.predefinedPlaces.length || this.props.currentLocation === true) && this.state.listViewDisplayed === true) {
       return (
-        <FlatList
-          scrollEnabled={!this.props.disableScroll}
-          style={[this.props.suppressDefaultStyles ? {} : defaultStyles.listView, this.props.styles.listView]}
-          data={this.state.dataSource}
-          keyExtractor={keyGenerator}
-          extraData={[this.state.dataSource, this.props]}
-          ItemSeparatorComponent={this._renderSeparator}
-          renderItem={({ item }) => this._renderRow(item)}
-          ListHeaderComponent={this.props.renderHeaderComponent && this.props.renderHeaderComponent(this.state.text)}
-          ListFooterComponent={this._renderPoweredLogo}
-          {...this.props}
-        />
+        <View>
+          <FlatList
+            scrollEnabled={!this.props.disableScroll}
+            style={[this.props.suppressDefaultStyles ? {} : defaultStyles.listView, this.props.styles.listView]}
+            data={this.state.dataSource}
+            keyExtractor={keyGenerator}
+            extraData={[this.state.dataSource, this.props]}
+            ItemSeparatorComponent={this._renderSeparator}
+            renderItem={({ item }) => this._renderRow(item)}
+            ListHeaderComponent={this.props.renderHeaderComponent && this.props.renderHeaderComponent(this.state.text)}
+            ListFooterComponent={this._renderPoweredLogo}
+            {...this.props}
+          />
+          <View
+            style={[this.props.suppressDefaultStyles ? {} : defaultStyles.separator, this.props.styles.separator]} />
+        </View>
       );
     }
 
@@ -711,7 +723,7 @@ export default class GooglePlacesAutocomplete extends Component {
             style={[this.props.suppressDefaultStyles ? {} : defaultStyles.textInputContainer, this.props.styles.textInputContainer]}
           >
             {this._renderLeftButton()}
-            <TextInput
+            {/* <TextInput
               ref="textInput"
               editable={this.props.editable}
               returnKeyType={this.props.returnKeyType}
@@ -730,8 +742,28 @@ export default class GooglePlacesAutocomplete extends Component {
               }
               { ...userProps }
               onChangeText={this._handleChangeText}
-            />
-            {this._renderRightButton()}
+			/> */}
+			<SearchBar
+				autoFocus={this.props.autoFocus}
+				keyboardType={this.props.keyboardType}
+				keyboardAppearance={this.props.keyboardAppearance}
+				returnKeyType={this.props.returnKeyType}
+				onSubmitEditing={this.props.onSubmitEditing}
+				containerStyle={[{ backgroundColor: 'transparent', borderBottomColor: 'transparent', borderTopColor: 'transparent', justifyContent: 'center', padding: 0 }, this.props.searchContainerStyle]}
+				clearIcon={this.props.clearIcon ? <TouchableOpacity onPress={this.props.onClearText} style={{ justifyContent: 'center', alignItems: 'center', height: 30 }}><Text style={[{ color: '#C0C9D5', fontSize: 10, textTransform: "uppercase", paddingRight: 10 }, this.props.clearTextStyle]}>{this.props.clearSearchText}</Text></TouchableOpacity> : null}
+				inputContainerStyle={[this.props.suppressDefaultStyles ? {} : defaultStyles.textInput, this.props.styles.textInput]}
+				inputStyle={[this.props.suppressDefaultStyles ? { marginLeft: 0, paddingLeft: 15, borderBottomColor: 'transparent' } : defaultStyles.inputStyle, this.props.styles.inputStyle]}
+				onClear={this.props.onClearText}
+				onChangeText={this._handleChangeText}
+				value={this.state.text}
+				searchIcon={this.props.searchIcon}
+				placeholder={this.props.placeholder}
+				onBlur={this._onBlur}
+				underlineColorAndroid={this.props.underlineColorAndroid}
+				onFocus={onFocus ? () => { this._onFocus(); onFocus() } : this._onFocus}
+				placeholderTextColor={this.props.placeholderTextColor}
+			/>
+			{this._renderRightButton()}
           </View>
         }
         {this._getFlatList()}
