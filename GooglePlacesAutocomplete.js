@@ -13,9 +13,11 @@ import {
   Platform,
   ActivityIndicator,
   PixelRatio,
-  Keyboard
+  Keyboard,
+  TouchableOpacity
 } from 'react-native';
 import Qs from 'qs';
+import { SearchBar } from 'react-native-elements';
 import debounce from 'lodash.debounce';
 
 const WINDOW = Dimensions.get('window');
@@ -26,26 +28,19 @@ const defaultStyles = {
   },
   textInputContainer: {
     backgroundColor: '#C9C9CE',
-    height: 44,
+    height: 60,
     borderTopColor: '#7e7e7e',
     borderBottomColor: '#b5b5b5',
     borderTopWidth: 1 / PixelRatio.get(),
     borderBottomWidth: 1 / PixelRatio.get(),
     flexDirection: 'row',
+    alignItems: 'center',
+    marginVerticle: 10
   },
   textInput: {
     backgroundColor: '#FFFFFF',
     height: 28,
-    borderRadius: 5,
-    paddingTop: 4.5,
-    paddingBottom: 4.5,
-    paddingLeft: 10,
-    paddingRight: 10,
-    marginTop: 7.5,
-    marginLeft: 8,
-    marginRight: 8,
-    fontSize: 15,
-    flex: 1
+    width: 300
   },
   poweredContainer: {
     justifyContent: 'flex-end',
@@ -72,6 +67,12 @@ const defaultStyles = {
   androidLoader: {
     marginRight: -15,
   },
+  inputStyle: {
+    color: '#F5F5F5',
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0.1,
+  }
 };
 
 export default class GooglePlacesAutocomplete extends Component {
@@ -87,6 +88,8 @@ export default class GooglePlacesAutocomplete extends Component {
   getInitialState = () => ({
     text: this.props.getDefaultValue(),
     dataSource: this.buildRowsFromResults([]),
+    showClearIcon: false,
+    showError: false,
     listViewDisplayed: this.props.listViewDisplayed === 'auto' ? false : this.props.listViewDisplayed,
   })
 
@@ -479,6 +482,7 @@ export default class GooglePlacesAutocomplete extends Component {
               this._results = results;
               this.setState({
                 dataSource: this.buildRowsFromResults(results),
+                showError: this._results.length > 0 ? false : true
               });
             }
           }
@@ -488,6 +492,7 @@ export default class GooglePlacesAutocomplete extends Component {
             else{
               this.props.onFail(responseJSON.error_message)
             }
+            this.setState({ showError: true });
           }
         } else {
           // console.warn("google places autocomplete: request could not be completed or has been aborted");
@@ -521,6 +526,7 @@ export default class GooglePlacesAutocomplete extends Component {
 
     this.setState({
       text: text,
+      showClearIcon: true,
       listViewDisplayed: this._isMounted || this.props.autoFocus,
     });
   }
@@ -535,6 +541,15 @@ export default class GooglePlacesAutocomplete extends Component {
     if (onChangeText) {
       onChangeText(text);
     }
+  }
+
+  onClearText = () => {
+    this.setState({
+      text: '',
+      showClearIcon: false,
+      showError: false,
+      dataSource: []
+    });
   }
 
   _getRowLoader() {
@@ -595,7 +610,7 @@ export default class GooglePlacesAutocomplete extends Component {
           underlayColor={this.props.listUnderlayColor || "#c8c7cc"}
         >
           <View style={[this.props.suppressDefaultStyles ? {} : defaultStyles.row, this.props.styles.row, rowData.isPredefinedPlace ? this.props.styles.specialItemRow : {}]}>
-            {this._renderLoader(rowData)}
+            {this.props.enableLoader ? this._renderLoader(rowData) : null}
             {this._renderRowData(rowData)}
           </View>
         </TouchableHighlight>
@@ -675,23 +690,36 @@ export default class GooglePlacesAutocomplete extends Component {
     const keyGenerator = () => (
       Math.random().toString(36).substr(2, 10)
     );
-
-    if ((this.state.text !== '' || this.props.predefinedPlaces.length || this.props.currentLocation === true) && this.state.listViewDisplayed === true) {
-      return (
-        <FlatList
-          scrollEnabled={!this.props.disableScroll}
-          style={[this.props.suppressDefaultStyles ? {} : defaultStyles.listView, this.props.styles.listView]}
-          data={this.state.dataSource}
-          keyExtractor={keyGenerator}
-          extraData={[this.state.dataSource, this.props]}
-          ItemSeparatorComponent={this._renderSeparator}
-          renderItem={({ item }) => this._renderRow(item)}
-          ListHeaderComponent={this.props.renderHeaderComponent && this.props.renderHeaderComponent(this.state.text)}
-          ListFooterComponent={this._renderPoweredLogo}
-          {...this.props}
-        />
-      );
-    }
+    //if ((this.state.text !== '' || this.props.predefinedPlaces.length || this.props.currentLocation === true) && this.state.listViewDisplayed === true) {
+    return (
+      <View>
+        {this.state.dataSource.length == 0 ?
+          <View style={[{ marginTop: 60, marginHorizontal: 50, alignItems: 'center' }, this.props.styles.helpTextContainerStyle]}>
+            {this.props.noResultImageSource ? <Image source={this.props.noResultImageSource} /> : null}
+            <Text style={[{ paddingTop: 5, textAlign: 'center' }, this.props.styles.helpTextStyle]}>{this.state.showError ? this.props.no_result_message + '`' + this.state.text + '`' : this.props.search_help_text}</Text>
+          </View>
+          :
+          <View>
+            <FlatList
+              scrollEnabled={!this.props.disableScroll}
+              style={[this.props.suppressDefaultStyles ? {} : defaultStyles.listView, this.props.styles.listView]}
+              data={this.state.dataSource}
+              keyExtractor={keyGenerator}
+              extraData={[this.state.dataSource, this.props]}
+              ItemSeparatorComponent={this._renderSeparator}
+              renderItem={({ item }) => this._renderRow(item)}
+              ListHeaderComponent={this.props.renderHeaderComponent && this.props.renderHeaderComponent(this.state.text)}
+              ListFooterComponent={this._renderPoweredLogo}
+              keyboardShouldPersistTaps='handled'
+              {...this.props}
+            />
+            <View
+              style={[this.props.suppressDefaultStyles ? {} : defaultStyles.separator, this.props.styles.separator]} />
+          </View>
+        }
+      </View>
+    );
+    //}
 
     return null;
   }
@@ -711,7 +739,7 @@ export default class GooglePlacesAutocomplete extends Component {
             style={[this.props.suppressDefaultStyles ? {} : defaultStyles.textInputContainer, this.props.styles.textInputContainer]}
           >
             {this._renderLeftButton()}
-            <TextInput
+            {/* <TextInput
               ref="textInput"
               editable={this.props.editable}
               returnKeyType={this.props.returnKeyType}
@@ -730,6 +758,26 @@ export default class GooglePlacesAutocomplete extends Component {
               }
               { ...userProps }
               onChangeText={this._handleChangeText}
+			/> */}
+            <SearchBar
+              autoFocus={this.props.autoFocus}
+              keyboardType={this.props.keyboardType}
+              keyboardAppearance={this.props.keyboardAppearance}
+              returnKeyType={this.props.returnKeyType}
+              onSubmitEditing={this.props.onSubmitEditing}
+              containerStyle={[{ backgroundColor: 'transparent', borderBottomColor: 'transparent', borderTopColor: 'transparent', justifyContent: 'center', padding: 0 }, this.props.searchContainerStyle]}
+              clearIcon={this.state.showClearIcon ? <TouchableOpacity onPress={this.onClearText} style={{ justifyContent: 'center', alignItems: 'center', height: 30 }}><Text style={[{ color: '#C0C9D5', fontSize: 10, textTransform: "uppercase", paddingRight: 10 }, this.props.clearTextStyle]}>{this.props.clearSearchText}</Text></TouchableOpacity> : null}
+              inputContainerStyle={[this.props.suppressDefaultStyles ? {} : defaultStyles.textInput, this.props.styles.textInput]}
+              inputStyle={[this.props.suppressDefaultStyles ? { marginLeft: 0, borderBottomColor: 'transparent' } : defaultStyles.inputStyle, this.props.styles.inputStyle]}
+              onClear={this.onClearText}
+              onChangeText={this._handleChangeText}
+              value={this.state.text}
+              searchIcon={false}
+              placeholder={this.props.placeholder}
+              onBlur={this._onBlur}
+              underlineColorAndroid={this.props.underlineColorAndroid}
+              onFocus={onFocus ? () => { this._onFocus(); onFocus() } : this._onFocus}
+              placeholderTextColor={this.props.placeholderTextColor}
             />
             {this._renderRightButton()}
           </View>
