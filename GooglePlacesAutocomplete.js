@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   PixelRatio,
   Keyboard,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated
 } from 'react-native';
 import Qs from 'qs';
 import { SearchBar } from 'react-native-elements';
@@ -781,7 +782,8 @@ export default class GooglePlacesAutocomplete extends Component {
               }
               { ...userProps }
               onChangeText={this._handleChangeText}
-			/> */}
+      /> */}
+      <Animated.View style={[this.props.animation ? { width: this.props.searchBarWidth } : {width: '80%' }]}>
             <SearchBar
               autoFocus={this.props.autoFocus}
               keyboardType={this.props.keyboardType}
@@ -802,6 +804,7 @@ export default class GooglePlacesAutocomplete extends Component {
               onFocus={onFocus ? () => { this._onFocus(); onFocus() } : this._onFocus}
               placeholderTextColor={this.props.placeholderTextColor}
             />
+            </Animated.View>
             {this._renderRightButton()}
           </View>
         }
