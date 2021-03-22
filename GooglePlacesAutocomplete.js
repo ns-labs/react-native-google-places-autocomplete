@@ -783,7 +783,7 @@ export default class GooglePlacesAutocomplete extends Component {
               { ...userProps }
               onChangeText={this._handleChangeText}
       /> */}
-      <Animated.View style={[this.props.animation ? { width: this.props.searchBarWidth } : {width: '80%' }]}>
+      <Animated.View style={[this.props.animation ? { width: this.props.searchBarWidth } : {width: '80%', paddingBottom: Platform.OS==='ios' ? 0:5 }]}>
             <SearchBar
               autoFocus={this.props.autoFocus}
               keyboardType={this.props.keyboardType}
